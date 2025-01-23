@@ -1,0 +1,15 @@
+[project]
+name = "chat-with-jfk-files"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "voynow", email = "voynow99@gmail.com"},
+]
+dependencies = []
+requires-python = "==3.11.*"
+readme = "README.md"
+license = {text = "MIT"}
+
+
+[tool.pdm]
+distribution = false
