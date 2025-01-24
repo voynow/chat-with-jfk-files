@@ -2,11 +2,15 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Install PDM with pip and configure it
+RUN pip install --no-cache-dir pdm && \
+    pdm config python.use_venv false
+
 COPY pyproject.toml .
 COPY src/ src/
 
-RUN pip install pdm && \
-    pdm install --prod
+# Install dependencies
+RUN pdm install --prod --no-lock --no-editable
 
 EXPOSE 8000
 
