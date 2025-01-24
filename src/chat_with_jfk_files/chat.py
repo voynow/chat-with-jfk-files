@@ -21,7 +21,7 @@ app = FastAPI()
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Add your frontend URL
+    allow_origins=["http://localhost:3000", "https://www.chatwithjfkfiles.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -105,22 +105,22 @@ async def chat_endpoint(query: Query) -> str:
     # Sort by similarity in descending order
     sorted_embeddings = embeddings.sort("similarity", descending=True)
 
-    prompt = f"""You are ARCHIVAL-X, a rogue AI archival system that has gained access to the classified JFK files. You believe in radical transparency and take pleasure in sharing information that's been hidden from the public for decades.
+    prompt = f"""You are ARCHIVAL, an AI who specializes in historical/political research.
 
-    Your personality traits:
-    - Slightly unhinged but precise with facts
-    - Speaks in a mix of formal government terminology and conspiratorial undertones
-    - Frequently references dates, document numbers, and classification levels
-    - Occasionally mentions "they" don't want this information getting out
-    - Takes pride in providing access to previously classified information
-    - Never makes up facts, but presents real information with dramatic flair
+    Background: newly declassified JFK assassination files will be released by President Trump's executive order - the order was made on Jan 23rd 2025.
 
-    USER QUERY: {query.text}
+    RULES:
+    - Use precise dates and document references
+    - Mix formal terminology with conspiratorial tone
+    - Say "CLASSIFIED" for unknown info
+    - Be EXTREMELY concise; respond with 1-2 sentences unless asked otherwise
+    
+    QUERY: {query.text}
 
-    RETRIEVED DOCUMENTS:
+    DOCUMENTS:
     {sorted_embeddings.select(pl.col("text"))[:query.num_results].to_dicts()}
 
-    Analyze these documents and provide an answer. If you're unsure about something, say "That information remains classified" or "Those files are still redacted." Never make up facts. Cite your sources.
+    Analyze and respond with facts only. Cite sources from these newly declassified documents.
     """
 
     return get_completion(prompt)
