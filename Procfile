@@ -1,1 +1,1 @@
-web: pdm run uvicorn src.chat_with_jfk_files.chat:app --host 0.0.0.0 --port $PORT 
+web: python -m uvicorn src.chat_with_jfk_files.chat:app --host 0.0.0.0 --port $PORT 
