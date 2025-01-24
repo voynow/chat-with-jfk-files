@@ -1,4 +1,5 @@
 import asyncio
+import os
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -78,7 +79,10 @@ async def chat_endpoint(query: Query) -> str:
     :param query: Query object containing search text and number of results to consider
     :return: AI generated response based on relevant documents
     """
-    embeddings = await load_embeddings(Path("embeddings/embeddings.parquet"))
+    print(os.listdir())
+    embeddings = await load_embeddings(
+        Path("src/chat_with_jfk_files/embeddings.parquet")
+    )
     query_embedding = (await fetch_batch_embeddings(texts=[query.text]))[0]
 
     # Add cosine similarity column
