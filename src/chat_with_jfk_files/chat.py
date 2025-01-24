@@ -7,6 +7,7 @@ import numpy as np
 import polars as pl
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
 from openai.types.chat.chat_completion_message import ChatCompletionMessage
 from pydantic import BaseModel
@@ -16,6 +17,15 @@ load_dotenv()
 client = OpenAI()
 
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # Add your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def _get_completion(
