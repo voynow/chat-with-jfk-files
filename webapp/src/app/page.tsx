@@ -125,7 +125,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto mb-2 pr-2 sm:pr-4 scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent min-h-0">
+        <div className="flex-1 overflow-y-auto mb-2 pr-2 sm:pr-4  max-w-4xl scrollbar-thin scrollbar-thumb-gray-800 scrollbar-track-transparent min-h-0">
           <div className="flex flex-col space-y-6">
             {messages.map((message, index) => (
               <div
