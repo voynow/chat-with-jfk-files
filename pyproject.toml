@@ -6,12 +6,11 @@ authors = [{ name = "voynow", email = "voynow99@gmail.com" }]
 dependencies = [
     "openai>=1.60.0",
     "python-dotenv>=1.0.1",
-    "polars>=1.20.0",
     "fastapi>=0.115.7",
     "uvicorn>=0.30.1",
     "pydantic>=2.1.1",
     "gunicorn>=23.0.0",
-    "numpy>=2.2.2",
+    "pinecone>=5.4.2",
 ]
 requires-python = "==3.11.*"
 readme = "README.md"

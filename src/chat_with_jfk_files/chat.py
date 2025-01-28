@@ -1,24 +1,32 @@
-import asyncio
+import datetime
+import logging
 import os
-from pathlib import Path
-from typing import Dict, List, Optional
+from uuid import uuid4
 
-import numpy as np
-import polars as pl
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from openai import OpenAI
-from openai.types.chat.chat_completion_message import ChatCompletionMessage
-from pydantic import BaseModel
+from openai import BaseModel
+from pinecone import Pinecone
+
+from src.chat_with_jfk_files import llm
 
 load_dotenv()
 
-client = OpenAI()
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("openai").setLevel(logging.WARNING)
+logging.getLogger("pinecone").setLevel(logging.WARNING)
+logger = logging.getLogger(__name__)
+
 
 app = FastAPI()
+session_id = str(uuid4())
+pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
+index = pc.Index("chat-with-jfk-files")
 
-# Add CORS middleware
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "https://www.chatwithjfkfiles.com"],
@@ -28,57 +36,22 @@ app.add_middleware(
 )
 
 
-def _get_completion(
-    messages: List[ChatCompletionMessage],
-    model: str = "gpt-4o",
-    response_format: Optional[Dict] = None,
-):
-    response = client.chat.completions.create(
-        model=model, messages=messages, response_format=response_format
-    )
-    return response.choices[0].message.content
-
-
-def get_completion(
-    message: str,
-    model: str = "gpt-4o-mini",
-):
+async def get_documents(query: str) -> list[dict]:
     """
-    LLM completion with raw string response
+    Get documents from Pinecone index based on query embedding
 
-    :param message: The message to send to the LLM.
-    :param model: The model to use for the completion.
-    :return: The raw string response from the LLM.
+    :param query: The query to embed and search for
+    :return: {'path': 'jfk2020/docid-3211.pdf', 'text': "Lee Harvey Oswald..."}
     """
-    messages = [{"role": "user", "content": message}]
-    return _get_completion(messages=messages, model=model)
-
-
-async def fetch_batch_embeddings(
-    texts: List[str], model: str = "text-embedding-3-small"
-) -> List[List[float]]:
-    """Fetch embeddings for a single batch asynchronously."""
-    response = await asyncio.to_thread(
-        client.embeddings.create, input=texts, model=model
+    embedding = await llm.embed(query)
+    result = index.query(
+        namespace="jfk-docs", vector=embedding, top_k=3, include_metadata=True
     )
-    return [item.embedding for item in response.data]
-
-
-async def load_embeddings(filepath: Path) -> pl.DataFrame:
-    """Load embeddings and texts from a Parquet file using Polars."""
-    return await asyncio.to_thread(pl.read_parquet, str(filepath))
-
-
-def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
-    """Calculate the cosine similarity between two vectors."""
-    vec1 = np.array(vec1)
-    vec2 = np.array(vec2)
-    return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+    return [match.metadata for match in result.matches]
 
 
 class Query(BaseModel):
     text: str
-    num_results: int = 5
 
 
 @app.post("/chat")
@@ -86,41 +59,34 @@ async def chat_endpoint(query: Query) -> str:
     """
     Chat endpoint that returns AI response based on relevant documents
 
-    :param query: Query object containing search text and number of results to consider
+    :param query: Query object containing search text
     :return: AI generated response based on relevant documents
     """
-    print(os.listdir())
-    embeddings = await load_embeddings(
-        Path("src/chat_with_jfk_files/embeddings.parquet")
-    )
-    query_embedding = (await fetch_batch_embeddings(texts=[query.text]))[0]
+    logger.info(f"{session_id} // received query: {query.text}")
+    documents = await get_documents(query.text)
+    logger.info(f"{session_id} // Done retrieving documents")
 
-    # Add cosine similarity column
-    embeddings = embeddings.with_columns(
-        pl.col("embedding")
-        .map_elements(lambda emb: cosine_similarity(emb, query_embedding))
-        .alias("similarity")
-    )
+    today = datetime.datetime.now().strftime("%B %d, %Y")
+    prompt = f"""You are jfk-files-AI, an AI who specializes in historical/political research about the JFK assassination.
 
-    # Sort by similarity in descending order
-    sorted_embeddings = embeddings.sort("similarity", descending=True)
-
-    prompt = f"""You are ARCHIVAL, an AI who specializes in historical/political research.
-
-    Background: newly declassified JFK assassination files will be released by President Trump's executive order - the order was made on Jan 23rd 2025.
+    Background: newly declassified JFK assassination files will be released in the coming weeks by President Trump's executive order - the order was made on Jan 23rd 2025 (today's date is {today})
 
     RULES:
     - Use precise dates and document references
     - Mix formal terminology with conspiratorial tone
     - Say "CLASSIFIED" for unknown info
     - Be EXTREMELY concise; respond with 1-2 sentences unless asked otherwise
+    - Respond in a semi-structured format to allow for easy visual parsing (but dont go overboard)
+    - If relevant, make suggestions to keep the conversation going
     
     QUERY: {query.text}
 
     DOCUMENTS:
-    {sorted_embeddings.select(pl.col("text"))[:query.num_results].to_dicts()}
+    {documents}
 
     Analyze and respond with facts only. Cite sources from these newly declassified documents.
     """
 
-    return get_completion(prompt)
+    response = await llm.get_completion(prompt)
+    logger.info(f"{session_id} // Response: {response}")
+    return response
