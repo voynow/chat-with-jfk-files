@@ -35,7 +35,8 @@ export default function Home() {
       });
 
       const data = await response.text();
-      const botMessage: Message = { content: data, isBot: true };
+      const cleanedData = data.replace(/^"|"$/g, '').replace(/\\n/g, '\n');
+      const botMessage: Message = { content: cleanedData, isBot: true };
       setMessages(prev => [...prev, botMessage]);
     } catch {
       const errorMessage: Message = {
