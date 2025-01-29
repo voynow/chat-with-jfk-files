@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from openai import BaseModel
 from pinecone import Pinecone
 
-from src.chat_with_jfk_files import llm
+from src.chat_with_jfk_files import llm, prompts
 
 load_dotenv()
 
@@ -36,22 +36,24 @@ app.add_middleware(
 )
 
 
-async def get_documents(query: str) -> list[dict]:
+class Query(BaseModel):
+    text: str
+    chat_history: list[str] = []
+
+
+async def get_documents(query: Query) -> list[dict]:
     """
     Get documents from Pinecone index based on query embedding
 
     :param query: The query to embed and search for
     :return: {'path': 'jfk2020/docid-3211.pdf', 'text': "Lee Harvey Oswald..."}
     """
-    embedding = await llm.embed(query)
+    similarity_query = "\n".join([query.text] + query.chat_history)
+    embedding = await llm.embed(similarity_query)
     result = index.query(
         namespace="jfk-docs", vector=embedding, top_k=3, include_metadata=True
     )
     return [match.metadata for match in result.matches]
-
-
-class Query(BaseModel):
-    text: str
 
 
 @app.post("/chat")
@@ -62,31 +64,22 @@ async def chat_endpoint(query: Query) -> str:
     :param query: Query object containing search text
     :return: AI generated response based on relevant documents
     """
-    logger.info(f"{session_id} // received query: {query.text}")
-    documents = await get_documents(query.text)
+    today = datetime.datetime.now().strftime("%B %d, %Y")
+
+    logger.info(
+        f"{session_id} // received query: {query.text} with {len(query.chat_history)} historical messages"
+    )
+
+    documents = await get_documents(query)
     logger.info(f"{session_id} // Done retrieving documents")
 
-    today = datetime.datetime.now().strftime("%B %d, %Y")
-    prompt = f"""You are jfk-files-AI, an AI who specializes in historical/political research about the JFK assassination.
-
-    Background: newly declassified JFK assassination files will be released in the coming weeks by President Trump's executive order - the order was made on Jan 23rd 2025 (today's date is {today})
-
-    RULES:
-    - Use precise dates and document references
-    - Mix formal terminology with conspiratorial tone
-    - Say "CLASSIFIED" for unknown info
-    - Be EXTREMELY concise; respond with 1-2 sentences unless asked otherwise
-    - Respond in a semi-structured format to allow for easy visual parsing (but dont go overboard)
-    - If relevant, make suggestions to keep the conversation going
-    
-    QUERY: {query.text}
-
-    DOCUMENTS:
-    {documents}
-
-    Analyze and respond with facts only. Cite sources from these newly declassified documents.
-    """
-
-    response = await llm.get_completion(prompt)
+    response = await llm.get_completion(
+        prompts.chat_message.format(
+            today=today,
+            chat_history=query.chat_history,
+            query_text=query.text,
+            documents=documents,
+        )
+    )
     logger.info(f"{session_id} // Response: {response}")
     return response

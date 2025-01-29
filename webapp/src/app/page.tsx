@@ -11,33 +11,41 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [started, setStarted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [chatHistory, setChatHistory] = useState<string[]>([]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
 
-    // Add user message
     const userMessage: Message = { content: input, isBot: false };
     setMessages([...messages, userMessage]);
     setInput("");
     setIsLoading(true);
 
     try {
-      const response = await fetch('https://sea-turtle-app-k2vwt.ondigitalocean.app/chat', {
+      const url = 'http://localhost:8000/chat'
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           text: input,
-          num_results: 5
+          chat_history: chatHistory
         })
       });
 
       const data = await response.text();
       const cleanedData = data.replace(/^"|"$/g, '').replace(/\\n/g, '\n');
+
       const botMessage: Message = { content: cleanedData, isBot: true };
       setMessages(prev => [...prev, botMessage]);
+
+      const userHistoryMessage = `USER: ${input}`;
+      const botHistoryMessage = `ASSISTANT: ${cleanedData}`;
+      const newHistory = [...chatHistory, userHistoryMessage, botHistoryMessage];
+      setChatHistory(newHistory);
+
     } catch {
       const errorMessage: Message = {
         content: "Sorry, I'm having trouble connecting to the archives right now.",
@@ -56,7 +64,7 @@ export default function Home() {
 
         <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
           <div className="relative z-10 max-w-4xl mx-auto text-center space-y-8">
-            {/* Simple green dot and status */}
+
             <div className="flex items-center justify-center gap-2 text-sm font-mono text-gray-500 mb-12">
               <span className="w-2 h-2 bg-green-500/50 rounded-full" />
               <span>System Online</span>
