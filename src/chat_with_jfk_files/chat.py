@@ -77,7 +77,6 @@ async def chat_endpoint(query: Query) -> str:
     )
 
     documents = await get_documents(query)
-    logger.info(f"{session_id} // Done retrieving documents")
 
     response = await llm.get_completion(
         prompts.chat_message.format(
@@ -87,4 +86,5 @@ async def chat_endpoint(query: Query) -> str:
             documents=documents,
         )
     )
+    logger.info(f"{session_id} // Response: {response}")
     return response

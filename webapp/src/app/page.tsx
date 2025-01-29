@@ -43,7 +43,7 @@ export default function Home() {
 
       const userHistoryMessage = `USER: ${input}`;
       const botHistoryMessage = `ASSISTANT: ${cleanedData}`;
-      const newHistory = [...chatHistory, userHistoryMessage, botHistoryMessage];
+      const newHistory = [...chatHistory.slice(-4), userHistoryMessage, botHistoryMessage];
       setChatHistory(newHistory);
 
     } catch {
