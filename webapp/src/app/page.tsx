@@ -23,7 +23,7 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      const url = 'http://localhost:8000/chat'
+      const url = 'https://sea-turtle-app-k2vwt.ondigitalocean.app/chat'
       const response = await fetch(url, {
         method: 'POST',
         headers: {
