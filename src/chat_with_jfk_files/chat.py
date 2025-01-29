@@ -49,12 +49,17 @@ async def get_documents(query: Query) -> list[dict]:
     :param query: The query to embed and search for
     :return: {'path': 'jfk2020/docid-3211.pdf', 'text': "Lee Harvey Oswald..."}
     """
+    start_time = time.time()
     similarity_query = "\n".join([query.text] + query.chat_history)
     embedding = await llm.embed(similarity_query)
     result = index.query(
         namespace="jfk-docs", vector=embedding, top_k=3, include_metadata=True
     )
-    return [match.metadata for match in result.matches]
+    response = [match.metadata for match in result.matches]
+    logger.info(
+        f"{session_id} // querying documents took {time.time() - start_time:.2f}s"
+    )
+    return response
 
 
 @app.post("/chat")
@@ -65,7 +70,6 @@ async def chat_endpoint(query: Query) -> str:
     :param query: Query object containing search text
     :return: AI generated response based on relevant documents
     """
-    start_time = time.time()
     today = datetime.datetime.now().strftime("%B %d, %Y")
 
     logger.info(
@@ -83,6 +87,4 @@ async def chat_endpoint(query: Query) -> str:
             documents=documents,
         )
     )
-    elapsed_time = time.time() - start_time
-    logger.info(f"{session_id} // Done in {elapsed_time:.2f}s // Response: {response}")
     return response
