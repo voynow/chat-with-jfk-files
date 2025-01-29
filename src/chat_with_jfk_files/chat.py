@@ -1,6 +1,7 @@
 import datetime
 import logging
 import os
+import time
 from uuid import uuid4
 
 from dotenv import load_dotenv
@@ -64,6 +65,7 @@ async def chat_endpoint(query: Query) -> str:
     :param query: Query object containing search text
     :return: AI generated response based on relevant documents
     """
+    start_time = time.time()
     today = datetime.datetime.now().strftime("%B %d, %Y")
 
     logger.info(
@@ -81,5 +83,6 @@ async def chat_endpoint(query: Query) -> str:
             documents=documents,
         )
     )
-    logger.info(f"{session_id} // Response: {response}")
+    elapsed_time = time.time() - start_time
+    logger.info(f"{session_id} // Done in {elapsed_time:.2f}s // Response: {response}")
     return response
