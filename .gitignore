@@ -172,3 +172,5 @@ cython_debug/
 
 ocr_output.jsonl
 embeddings.jsonl
+
+.env.local

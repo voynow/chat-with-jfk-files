@@ -23,8 +23,8 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      const url = 'https://sea-turtle-app-k2vwt.ondigitalocean.app/chat'
-      const response = await fetch(url, {
+      const url = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(url!, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
