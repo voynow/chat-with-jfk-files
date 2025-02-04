@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Chat with JFK Files",
   description: "Chat with JFK Files",
+  icons: {
+    icon: '/favicon.png',
+  },
 };
 
 export default function RootLayout({
