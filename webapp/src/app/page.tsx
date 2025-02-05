@@ -57,14 +57,13 @@ export default function Home() {
             setMessages(prev => {
               const newMessages = [...prev];
               const lastMessage = newMessages[newMessages.length - 1];
-              lastMessage.content = fullContent;  // Replace instead of append
+              lastMessage.content = fullContent;
               return newMessages;
             });
           }
         }
       }
 
-      // Update chat history after streaming is complete
       const userHistoryMessage = `USER: ${currentInput}`;
       const botHistoryMessage = `ASSISTANT: ${fullContent}`;
       setChatHistory(prev => [...prev.slice(-4), userHistoryMessage, botHistoryMessage]);
@@ -89,7 +88,6 @@ export default function Home() {
     <ChatInterface
       messages={messages}
       input={input}
-      isLoading={isLoading}
       onInputChange={setInput}
       onSubmit={handleSubmit}
       onBack={() => setStarted(false)}

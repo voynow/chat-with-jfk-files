@@ -1,4 +1,4 @@
-import { FormEvent } from "react";
+import { FormEvent, useEffect, useRef } from "react";
 
 type Message = {
     content: string;
@@ -8,7 +8,6 @@ type Message = {
 type ChatInterfaceProps = {
     messages: Message[];
     input: string;
-    isLoading: boolean;
     onInputChange: (value: string) => void;
     onSubmit: (e: FormEvent) => void;
     onBack: () => void;
@@ -17,30 +16,38 @@ type ChatInterfaceProps = {
 export function ChatInterface({
     messages,
     input,
-    isLoading,
     onInputChange,
     onSubmit,
     onBack
 }: ChatInterfaceProps) {
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages]);
+
     return (
-        <div className="flex flex-col min-h-screen h-[100dvh] bg-gray-950 text-gray-100">
-            <div className="absolute inset-0 pointer-events-none noise-overlay opacity-[0.15]" />
+        <div className="flex flex-col min-h-screen h-[100dvh] bg-gray-950">
+            <div className="fixed inset-0 bg-gray-950" />
+            <div className="fixed inset-0 pointer-events-none noise-overlay opacity-[0.15]" />
 
             <main className="flex-1 flex flex-col w-full p-2 sm:p-6 relative">
-                <div className="flex items-center justify-between mb-6 max-w-4xl mx-auto w-full">
-                    <div className="flex items-center gap-2 sm:gap-4">
-                        <button
-                            onClick={onBack}
-                            className="text-sm font-mono text-gray-500 hover:text-green-400 transition-colors px-2 sm:px-4 py-2"
-                        >
-                            ←
-                        </button>
-                        <h1 className="text-lg sm:text-xl font-mono text-gray-400 truncate">
-                            JFK Files <span className="text-green-500/50">●</span>
-                        </h1>
-                    </div>
-                    <div className="text-[10px] sm:text-xs font-mono text-gray-500">
-                        Jan 23rd 2025
+                <div className="sticky top-0 z-10 bg-gray-950/80 backdrop-blur-sm mb-6 -mx-2 sm:-mx-6 px-2 sm:px-6 py-2">
+                    <div className="flex items-center justify-between max-w-4xl mx-auto w-full">
+                        <div className="flex items-center gap-2 sm:gap-4">
+                            <button
+                                onClick={onBack}
+                                className="text-xl font-mono text-gray-500 hover:text-green-400 transition-colors px-2 sm:px-4 py-2"
+                            >
+                                ←
+                            </button>
+                            <h1 className="text-lg sm:text-xl font-mono text-gray-400 truncate">
+                                JFK Files <span className="text-green-500/50">●</span>
+                            </h1>
+                        </div>
+                        <div className="text-[10px] sm:text-xs font-mono text-gray-500">
+                            Jan 23rd 2025
+                        </div>
                     </div>
                 </div>
 
@@ -71,6 +78,7 @@ export function ChatInterface({
                                 </div>
                             </div>
                         ))}
+                        <div ref={messagesEndRef} />
                     </div>
                 </div>
 

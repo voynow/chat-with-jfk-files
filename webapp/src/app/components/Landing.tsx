@@ -97,7 +97,7 @@ export function Landing({ onStart }: LandingProps) {
                         </div>
                     </div>
 
-                    <div className="pt-16 text-center font-mono">
+                    <div className="text-center font-mono">
                         <div className="inline-block border border-red-900/30 bg-gray-900/20 backdrop-blur-sm px-6 py-4 hover:border-red-700/40 transition-colors duration-300 relative overflow-hidden">
                             <div className="absolute inset-0 bg-gradient-to-b from-red-900/5 via-transparent to-red-900/5 animate-pulse" />
                             <div className="text-red-500/80 text-xs tracking-wider relative z-10">NO MEME COINS ARE ASSOCIATED WITH THIS PROJECT</div>
