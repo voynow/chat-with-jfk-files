@@ -12,7 +12,6 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [started, setStarted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [chatHistory, setChatHistory] = useState<string[]>([]);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -23,7 +22,6 @@ export default function Home() {
     setMessages(prev => [...prev, userMessage, { content: "", isBot: true }]);
     const currentInput = input;  // Capture current input value
     setInput("");
-    setIsLoading(true);
 
     try {
       const response = await fetch(process.env.NEXT_PUBLIC_API_URL_LOCAL!, {
@@ -68,15 +66,14 @@ export default function Home() {
       const botHistoryMessage = `ASSISTANT: ${fullContent}`;
       setChatHistory(prev => [...prev.slice(-4), userHistoryMessage, botHistoryMessage]);
 
-    } catch (error) {
+    } catch (err: unknown) {
+      console.error('Chat error:', err);
       setMessages(prev => {
         const newMessages = [...prev];
         const lastMessage = newMessages[newMessages.length - 1];
         lastMessage.content += "\n\nConnection Error: Message may be incomplete.";
         return newMessages;
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
