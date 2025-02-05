@@ -58,27 +58,19 @@ export function ChatInterface({
                                     <div className={`inline-block p-3 font-mono text-sm backdrop-blur-sm ${message.isBot
                                         ? "bg-gray-900/50 text-green-100 border-l-2 border-l-green-800"
                                         : "bg-gray-800/50 text-gray-100 border-l-2 border-l-gray-700"}`}>
-                                        <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                                        {message.isBot && !message.content ? (
+                                            <div className="flex items-center space-x-2">
+                                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse [animation-delay:200ms]" />
+                                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse [animation-delay:400ms]" />
+                                            </div>
+                                        ) : (
+                                            <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
                         ))}
-                        {isLoading && (
-                            <div className="group flex flex-col space-y-2 animate-fade-in">
-                                <div className="flex items-center space-x-2 text-xs font-mono text-gray-500">
-                                    <span>Archive</span>
-                                </div>
-                                <div className="inline-block max-w-[85%]">
-                                    <div className="inline-block p-3 font-mono text-sm backdrop-blur-sm bg-gray-900/50 text-green-100 border-l-2 border-l-green-800">
-                                        <div className="flex items-center space-x-2">
-                                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse [animation-delay:200ms]" />
-                                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse [animation-delay:400ms]" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
 

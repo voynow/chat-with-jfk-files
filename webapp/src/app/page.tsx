@@ -20,40 +20,62 @@ export default function Home() {
     if (!input.trim()) return;
 
     const userMessage: Message = { content: input, isBot: false };
-    setMessages([...messages, userMessage]);
+    setMessages(prev => [...prev, userMessage, { content: "", isBot: true }]);
+    const currentInput = input;  // Capture current input value
     setInput("");
     setIsLoading(true);
 
     try {
-      const url = process.env.NEXT_PUBLIC_API_URL;
-      const response = await fetch(url!, {
+      const response = await fetch(process.env.NEXT_PUBLIC_API_URL_LOCAL!, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: input,
+          text: currentInput,
           chat_history: chatHistory
         })
       });
 
-      const data = await response.text();
-      const cleanedData = data.replace(/^"|"$/g, '').replace(/\\n/g, '\n');
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = "";
 
-      const botMessage: Message = { content: cleanedData, isBot: true };
-      setMessages(prev => [...prev, botMessage]);
+      if (!reader) throw new Error("No reader available");
 
-      const userHistoryMessage = `USER: ${input}`;
-      const botHistoryMessage = `ASSISTANT: ${cleanedData}`;
-      const newHistory = [...chatHistory.slice(-4), userHistoryMessage, botHistoryMessage];
-      setChatHistory(newHistory);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-    } catch {
-      const errorMessage: Message = {
-        content: "Sorry, I'm having trouble connecting to the archives right now.",
-        isBot: true
-      };
-      setMessages(prev => [...prev, errorMessage]);
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const content = line.replace('data: ', '');
+            if (content.startsWith('[ERROR]')) continue;
+
+            fullContent += content;
+            setMessages(prev => {
+              const newMessages = [...prev];
+              const lastMessage = newMessages[newMessages.length - 1];
+              lastMessage.content = fullContent;  // Replace instead of append
+              return newMessages;
+            });
+          }
+        }
+      }
+
+      // Update chat history after streaming is complete
+      const userHistoryMessage = `USER: ${currentInput}`;
+      const botHistoryMessage = `ASSISTANT: ${fullContent}`;
+      setChatHistory(prev => [...prev.slice(-4), userHistoryMessage, botHistoryMessage]);
+
+    } catch (error) {
+      setMessages(prev => {
+        const newMessages = [...prev];
+        const lastMessage = newMessages[newMessages.length - 1];
+        lastMessage.content += "\n\nConnection Error: Message may be incomplete.";
+        return newMessages;
+      });
     } finally {
       setIsLoading(false);
     }

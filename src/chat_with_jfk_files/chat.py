@@ -7,6 +7,7 @@ from uuid import uuid4
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from openai import BaseModel
 from pinecone import Pinecone
 
@@ -34,6 +35,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Type", "Content-Disposition"],
 )
 
 
@@ -63,28 +65,25 @@ async def get_documents(query: Query) -> list[dict]:
 
 
 @app.post("/chat")
-async def chat_endpoint(query: Query) -> str:
-    """
-    Chat endpoint that returns AI response based on relevant documents
-
-    :param query: Query object containing search text
-    :return: AI generated response based on relevant documents
-    """
+async def chat_endpoint(query: Query) -> StreamingResponse:
+    """Streaming chat endpoint"""
     today = datetime.datetime.now().strftime("%B %d, %Y")
-
-    logger.info(
-        f"{session_id} // received query: {query.text} with {len(query.chat_history)} historical messages"
-    )
-
     documents = await get_documents(query)
-
-    response = await llm.get_completion(
-        prompts.chat_message.format(
-            today=today,
-            chat_history=query.chat_history,
-            query_text=query.text,
-            documents=documents,
-        )
+    prompt = prompts.chat_message.format(
+        today=today,
+        chat_history=query.chat_history,
+        query_text=query.text,
+        documents=documents,
     )
-    logger.info(f"{session_id} // Response: {response}")
-    return response
+
+    async def generate():
+        full_response = []
+        try:
+            async for chunk in llm.get_streaming_completion(prompt):
+                full_response.append(chunk)
+                yield f"data: {chunk}\n\n"
+            logger.info(f"{session_id} // response: {''.join(full_response)}")
+        except Exception as e:
+            yield f"data: [ERROR] {str(e)}\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")

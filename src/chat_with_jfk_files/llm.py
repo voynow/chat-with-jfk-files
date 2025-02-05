@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import AsyncGenerator, Dict, List, Optional
 
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
@@ -39,3 +39,24 @@ async def get_completion(
     """
     messages = [{"role": "user", "content": message}]
     return await _get_completion(messages=messages, model=model)
+
+
+async def get_streaming_completion(
+    message: str,
+    model: str = "gpt-4o-mini",
+) -> AsyncGenerator[str, None]:
+    """
+    Stream LLM completion response
+
+    :param message: The message to send to the LLM
+    :param model: The model to use for completion
+    :yield: Chunks of the response as they arrive
+    """
+    messages = [{"role": "user", "content": message}]
+    response = await client.chat.completions.create(
+        model=model, messages=messages, stream=True
+    )
+
+    async for chunk in response:
+        if content := chunk.choices[0].delta.content:
+            yield content
