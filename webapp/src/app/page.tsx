@@ -24,7 +24,7 @@ export default function Home() {
     setInput("");
 
     try {
-      const response = await fetch(process.env.NEXT_PUBLIC_API_URL_LOCAL!, {
+      const response = await fetch(process.env.NEXT_PUBLIC_API_URL!, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
