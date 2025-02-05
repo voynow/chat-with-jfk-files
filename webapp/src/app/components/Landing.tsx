@@ -42,8 +42,8 @@ export function Landing({ onStart }: LandingProps) {
                         <h1 className="text-4xl md:text-6xl font-mono font-bold mb-6 tracking-tight bg-gradient-to-r from-gray-100 to-gray-300 text-transparent bg-clip-text">
                             JFK Assassination Files
                         </h1>
-                        <p className="text-lg md:text-xl text-gray-400 font-mono mb-12 max-w-2xl mx-auto leading-relaxed">
-                            Declassified and ready for querying...
+                        <p className="text-lg md:text-xl text-gray-400 font-mono mb-12 max-w-2xl mx-auto leading-relaxed typing-text">
+                            <span className="typing-cursor"></span>
                         </p>
                         <img
                             src="/favicon.png"

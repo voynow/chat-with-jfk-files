@@ -88,3 +88,23 @@ body {
   pointer-events: none;
   z-index: 2;
 }
+
+.typing-text::before {
+  content: "Declassified and ready for querying...";
+  animation: typing 2s steps(40), blink .5s step-end infinite alternate;
+  white-space: nowrap;
+  overflow: hidden;
+  border-right: 3px solid;
+  width: 0;
+  display: inline-block;
+  animation-fill-mode: forwards;
+}
+
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+@keyframes blink {
+  50% { border-color: transparent }
+}
