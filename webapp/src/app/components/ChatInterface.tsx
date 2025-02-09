@@ -1,8 +1,14 @@
-import { FormEvent, useEffect, useRef } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import ReactMarkdown from 'react-markdown';
 
-type Message = {
+export type Message = {
     content: string;
     isBot: boolean;
+    responseTime?: string;
+    documents?: Array<{
+        path: string;
+        text: string;
+    }>;
 };
 
 type ChatInterfaceProps = {
@@ -13,6 +19,19 @@ type ChatInterfaceProps = {
     onBack: () => void;
 };
 
+// Add custom styling for markdown elements
+const markdownStyles = {
+    h3: "text-green-400 font-bold mt-6 mb-3",
+    ul: "space-y-2 ml-4 list-disc my-3",
+    ol: "space-y-2 ml-4 list-decimal my-3",
+    li: "text-gray-300 pl-2",
+    p: "mb-4 leading-relaxed",
+    strong: "text-green-400 font-semibold inline-block my-1",
+    em: "text-gray-400 italic",
+    code: "bg-black/30 px-1 py-0.5 rounded text-green-400",
+    blockquote: "border-l-2 border-green-500/30 pl-4 my-4 text-gray-400 italic",
+};
+
 export function ChatInterface({
     messages,
     input,
@@ -21,6 +40,7 @@ export function ChatInterface({
     onBack
 }: ChatInterfaceProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [activeDoc, setActiveDoc] = useState<{ path: string, text: string } | null>(null);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -72,7 +92,59 @@ export function ChatInterface({
                                                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse [animation-delay:400ms]" />
                                             </div>
                                         ) : (
-                                            <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                                            <div className="space-y-2">
+                                                <ReactMarkdown
+                                                    className="leading-relaxed whitespace-pre-wrap"
+                                                    components={{
+                                                        h3: ({ children }) => <h3 className={markdownStyles.h3}>{children}</h3>,
+                                                        ul: ({ children }) => <ul className={markdownStyles.ul}>{children}</ul>,
+                                                        ol: ({ children }) => <ol className={markdownStyles.ol}>{children}</ol>,
+                                                        li: ({ children }) => <li className={markdownStyles.li}>{children}</li>,
+                                                        p: ({ children }) => <p className={markdownStyles.p}>{children}</p>,
+                                                        strong: ({ children }) => <strong className={markdownStyles.strong}>{children}</strong>,
+                                                        em: ({ children }) => <em className={markdownStyles.em}>{children}</em>,
+                                                        code: ({ children }) => <code className={markdownStyles.code}>{children}</code>,
+                                                        blockquote: ({ children }) => <blockquote className={markdownStyles.blockquote}>{children}</blockquote>,
+                                                    }}
+                                                >
+                                                    {message.content}
+                                                </ReactMarkdown>
+
+                                                {message.documents && message.documents.length > 0 && (
+                                                    <div className="text-xs font-mono mt-3">
+                                                        <div className="text-green-500/50 mt-4 mb-2 flex items-center gap-2">
+                                                            <span className="inline-block w-1.5 h-1.5 bg-green-500/50 rounded-full animate-pulse"></span>
+                                                            <span>{message.documents.length} source{message.documents.length > 1 ? 's' : ''} available</span>
+                                                        </div>
+                                                        <div className="space-y-1 inline-block">
+                                                            {message.documents.map((doc, idx) => (
+                                                                <details key={idx} className="group/doc">
+                                                                    <summary
+                                                                        className="cursor-pointer bg-black/20 px-2 py-1.5 hover:bg-black/30 transition-colors flex items-center gap-4 list-none"
+                                                                    >
+                                                                        <span className="font-mono text-green-500/50 group-hover/doc:text-green-400 transition-colors">▸</span>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <div className="font-mono tracking-tight truncate text-gray-400 group-hover/doc:text-green-400 transition-colors">
+                                                                                {doc.path}
+                                                                            </div>
+                                                                        </div>
+                                                                    </summary>
+                                                                    <div className="mt-0.5 border-l border-green-900/30">
+                                                                        <div className="pl-4 py-2 bg-black/20">
+                                                                            <div className="text-gray-300 font-mono text-[11px] leading-relaxed">
+                                                                                {doc.text.split('\n')
+                                                                                    .map(line => line.trim())
+                                                                                    .filter(line => line.length > 0)
+                                                                                    .join(' ')}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </details>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -103,6 +175,26 @@ export function ChatInterface({
                     </form>
                 </div>
             </main>
+
+            {/* Document Modal */}
+            {activeDoc && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-gray-900/90 border border-green-900/30 w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+                        <div className="flex items-center justify-between p-3 border-b border-green-900/30 bg-black/40">
+                            <div className="text-green-500/70 truncate">{activeDoc.path}</div>
+                            <button
+                                onClick={() => setActiveDoc(null)}
+                                className="text-gray-500 hover:text-green-400 transition-colors"
+                            >
+                                [close]
+                            </button>
+                        </div>
+                        <div className="p-4 overflow-y-auto font-mono text-gray-300 text-sm leading-relaxed">
+                            {activeDoc.text}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 } 

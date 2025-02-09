@@ -1,12 +1,8 @@
 "use client";
 import { FormEvent, useState } from "react";
-import { ChatInterface } from "./components/ChatInterface";
+import { ChatInterface, Message } from "./components/ChatInterface";
 import { Landing } from "./components/Landing";
 
-type Message = {
-  content: string;
-  isBot: boolean;
-};
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -47,9 +43,40 @@ export default function Home() {
         const lines = chunk.split('\n');
 
         for (const line of lines) {
+          if (!line.trim()) continue;  // Skip empty lines
           if (line.startsWith('data: ')) {
             const content = line.replace('data: ', '');
             if (content.startsWith('[ERROR]')) continue;
+
+            if (content.startsWith('[STATS]')) {
+              try {
+                const time = content.replace('[STATS]', '').trim();
+                setMessages(prev => {
+                  const newMessages = [...prev];
+                  const lastMessage = newMessages[newMessages.length - 1];
+                  lastMessage.responseTime = time;
+                  return newMessages;
+                });
+              } catch (e) {
+                console.error('Failed to parse stats:', e);
+              }
+              continue;
+            }
+
+            if (content.startsWith('[DOCS]')) {
+              try {
+                const docs = JSON.parse(content.replace('[DOCS]', '').trim());
+                setMessages(prev => {
+                  const newMessages = [...prev];
+                  const lastMessage = newMessages[newMessages.length - 1];
+                  lastMessage.documents = docs;
+                  return newMessages;
+                });
+              } catch (e) {
+                console.error('Failed to parse documents:', e);
+              }
+              continue;
+            }
 
             fullContent += content;
             setMessages(prev => {

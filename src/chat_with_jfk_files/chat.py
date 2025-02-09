@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 import os
 import time
@@ -67,6 +68,7 @@ async def get_documents(query: Query) -> list[dict]:
 @app.post("/chat")
 async def chat_endpoint(query: Query) -> StreamingResponse:
     """Streaming chat endpoint"""
+    start_time = time.time()
     today = datetime.datetime.now().strftime("%B %d, %Y")
     documents = await get_documents(query)
     prompt = prompts.chat_message.format(
@@ -82,6 +84,12 @@ async def chat_endpoint(query: Query) -> StreamingResponse:
             async for chunk in llm.get_streaming_completion(prompt):
                 full_response.append(chunk)
                 yield f"data: {chunk}\n\n"
+
+            # Send both stats and documents
+            elapsed = time.time() - start_time
+            yield f"data: [STATS] {elapsed:.1f}s\n\n"
+            yield f"data: [DOCS] {json.dumps(documents)}\n\n"
+
             logger.info(f"{session_id} // response: {''.join(full_response)}")
         except Exception as e:
             yield f"data: [ERROR] {str(e)}\n\n"
