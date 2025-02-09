@@ -53,10 +53,10 @@ export function Landing({ onStart }: LandingProps) {
 
                     </div>
 
-                    <div className="animate-fade-in-up animation-delay-200">
+                    <div className="animate-fade-in-up animation-delay-200 flex flex-col space-y-4 max-w-md mx-auto">
                         <button
                             onClick={onStart}
-                            className="group relative px-16 py-6 text-base font-mono bg-transparent text-green-400 border-2 border-green-500/30 hover:border-green-400/50 transition-all duration-300 overflow-hidden transform hover:scale-105"
+                            className="w-full group relative px-16 py-6 text-base font-mono bg-transparent text-green-400 border-2 border-green-500/30 hover:border-green-400/50 transition-all duration-300 overflow-hidden transform hover:scale-105"
                         >
                             <div className="absolute inset-0 bg-gradient-to-r from-green-500/0 via-green-500/10 to-green-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                             <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-green-900/5 to-black/0" />
@@ -67,6 +67,22 @@ export function Landing({ onStart }: LandingProps) {
                                 <div className="absolute inset-0 rotate-180 bg-gradient-to-r from-transparent via-green-500/10 to-transparent blur-sm" />
                             </div>
                         </button>
+
+                        <a
+                            href="https://www.buymeacoffee.com/voynow"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full group relative px-16 py-6 text-base font-mono bg-transparent text-amber-400 border-2 border-amber-500/30 hover:border-amber-400/50 transition-all duration-300 overflow-hidden transform hover:scale-105 flex items-center justify-center gap-3"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-500/10 to-amber-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                            <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-amber-900/5 to-black/0" />
+                            <span className="relative z-10 group-hover:text-amber-300 tracking-wider font-bold">
+                                SUPPORT_THIS_PROJECT
+                            </span>
+                            <div className="absolute -inset-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                <div className="absolute inset-0 rotate-180 bg-gradient-to-r from-transparent via-amber-500/10 to-transparent blur-sm" />
+                            </div>
+                        </a>
                     </div>
 
                     <div className="pt-16 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 font-mono text-sm max-w-4xl mx-auto px-4 md:px-6">

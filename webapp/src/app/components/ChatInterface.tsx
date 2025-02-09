@@ -65,9 +65,14 @@ export function ChatInterface({
                                 JFK Files <span className="text-green-500/50">●</span>
                             </h1>
                         </div>
-                        <div className="text-[10px] sm:text-xs font-mono text-gray-500">
-                            Jan 23rd 2025
-                        </div>
+                        <a
+                            href="https://www.buymeacoffee.com/voynow"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-mono text-amber-400 hover:text-amber-300 transition-colors border border-amber-400/30 hover:border-amber-300/50 px-3 py-1.5 rounded-sm hover:bg-amber-400/10"
+                        >
+                            SUPPORT_THIS_PROJECT
+                        </a>
                     </div>
                 </div>
 
