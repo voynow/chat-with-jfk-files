@@ -157,18 +157,18 @@ export function ChatInterface({
                 <div className="w-full max-w-4xl mx-auto sticky bottom-0">
                     <form
                         onSubmit={onSubmit}
-                        className="flex gap-2 items-center bg-gray-900/50 border border-gray-800/50 backdrop-blur-sm"
+                        className="flex gap-2 items-center bg-gray-900/50 border border-gray-800/50 backdrop-blur-sm relative"
                     >
                         <input
                             type="text"
                             value={input}
                             onChange={(e) => onInputChange(e.target.value)}
                             placeholder="Type your message..."
-                            className="flex-1 p-2 sm:p-3 bg-transparent font-mono text-sm focus:outline-none text-gray-100 placeholder-gray-600"
+                            className="flex-1 p-2 sm:p-3 bg-transparent font-mono text-sm focus:outline-none text-gray-100 placeholder-gray-600 min-w-0"
                         />
                         <button
                             type="submit"
-                            className="px-3 sm:px-5 py-2 sm:py-3 font-mono text-sm text-gray-400 hover:text-green-400 transition-colors"
+                            className="absolute right-0 top-0 bottom-0 px-3 sm:px-5 py-2 sm:py-3 font-mono text-sm text-gray-400 hover:text-green-400 transition-colors"
                         >
                             Send
                         </button>

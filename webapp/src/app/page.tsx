@@ -1,5 +1,5 @@
 "use client";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { ChatInterface, Message } from "./components/ChatInterface";
 import { Landing } from "./components/Landing";
 
@@ -9,6 +9,18 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [started, setStarted] = useState(false);
   const [chatHistory, setChatHistory] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.body.style.zoom = "0.9";
+    }
+
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.body.style.zoom = "1";
+      }
+    };
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
