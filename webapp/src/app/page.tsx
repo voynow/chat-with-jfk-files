@@ -2,6 +2,7 @@
 import { FormEvent, useState } from "react";
 import { ChatInterface, Message } from "./components/ChatInterface";
 import { Landing } from "./components/Landing";
+import { SupportModal } from "./components/SupportModal";
 
 
 export default function Home() {
@@ -9,10 +10,17 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [started, setStarted] = useState(false);
   const [chatHistory, setChatHistory] = useState<string[]>([]);
+  const [showSupport, setShowSupport] = useState(false);
+  const [hasShownSupport, setHasShownSupport] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
+
+    if (messages.length >= 3 && !hasShownSupport) {
+      setShowSupport(true);
+      setHasShownSupport(true);
+    }
 
     const userMessage: Message = { content: input, isBot: false };
     setMessages(prev => [...prev, userMessage, { content: "", isBot: true }]);
@@ -109,12 +117,18 @@ export default function Home() {
   }
 
   return (
-    <ChatInterface
-      messages={messages}
-      input={input}
-      onInputChange={setInput}
-      onSubmit={handleSubmit}
-      onBack={() => setStarted(false)}
-    />
+    <>
+      <ChatInterface
+        messages={messages}
+        input={input}
+        onInputChange={setInput}
+        onSubmit={handleSubmit}
+        onBack={() => setStarted(false)}
+      />
+
+      {showSupport && (
+        <SupportModal onClose={() => setShowSupport(false)} />
+      )}
+    </>
   );
 }
