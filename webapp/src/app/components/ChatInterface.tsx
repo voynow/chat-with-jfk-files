@@ -73,7 +73,6 @@ export function ChatInterface({
         path: string;
         text: string;
     } | null>(null);
-    const [showFullText, setShowFullText] = useState(false);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -87,7 +86,6 @@ export function ChatInterface({
 
         if (lastMessageWithDocs?.documents && lastMessageWithDocs.documents.length > 0) {
             setSidePanelDocument(lastMessageWithDocs.documents[0]);
-            setShowFullText(false);
         }
     }, [messages]);
 
