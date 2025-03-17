@@ -161,18 +161,27 @@ export function ChatInterface({
                     )}
                 </div>
 
+                {/* Panel toggle button - spans full height of left side */}
+                <button
+                    onClick={() => setSidePanelDocument(allDocuments[0])}
+                    className={`fixed inset-y-0 left-0 w-6 bg-gray-900/40 border-r border-green-900/20 flex items-center justify-center text-green-400/40 hover:text-green-400 hover:bg-gray-900/60 transition-all duration-300 z-20 ${sidePanelDocument ? 'opacity-0 pointer-events-none -translate-x-2' : 'opacity-100 translate-x-0'}`}
+                    aria-label="Open document panel"
+                    style={{ display: allDocuments.length > 0 ? 'flex' : 'none' }}
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </button>
+
                 {/* Main Chat Area - update the margin-left to match the new panel width */}
                 <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidePanelDocument ? 'ml-[28rem]' : 'ml-0'}`}>
                     <div className="sticky top-0 z-10 bg-gray-950/80 backdrop-blur-sm mb-6 -mx-2 sm:-mx-6 px-2 sm:px-6 py-2">
                         <div className="flex items-center justify-between max-w-4xl mx-auto w-full">
                             <div className="flex items-center gap-2 sm:gap-4">
-                                <button
+                                <h1
                                     onClick={onBack}
-                                    className="text-xl font-mono text-gray-500 hover:text-green-400 transition-colors px-2 sm:px-4 py-2"
+                                    className="text-lg sm:text-xl font-mono text-gray-400 truncate hover:text-green-400 transition-colors px-2 sm:px-4 py-2"
                                 >
-                                    ←
-                                </button>
-                                <h1 className="text-lg sm:text-xl font-mono text-gray-400 truncate">
                                     JFK Files <span className="text-green-500/50">●</span>
                                 </h1>
                             </div>
@@ -228,7 +237,7 @@ export function ChatInterface({
                         </div>
                     </div>
 
-                    <div className="w-full max-w-4xl mx-auto sticky bottom-0">
+                    <div className="w-full max-w-4xl mx-auto sticky bottom-4">
                         <form
                             onSubmit={onSubmit}
                             className="flex gap-2 items-center bg-gray-900/50 border border-gray-800/50 backdrop-blur-sm relative"
