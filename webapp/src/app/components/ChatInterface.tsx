@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useRef, useState } from "react";
+import React, { FormEvent, useEffect, useRef, useState } from "react";
 import ReactMarkdown from 'react-markdown';
 
 export type Message = {
@@ -32,6 +32,35 @@ const markdownStyles = {
     blockquote: "border-l-2 border-green-500/30 pl-4 my-4 text-gray-400 italic",
 };
 
+// Utility functions for document parsing
+const extractDocumentId = (path: string): string => {
+    // Extract filename without extension
+    const match = path.match(/([^\/]+)(?=\.\w+$|$)/);
+    return match ? match[0] : path;
+};
+
+const extractClassification = (doc: { path: string; text: string }): string | null => {
+    // Look for classification markers in the text
+    const classificationMatch = doc.text.match(/(CONFIDENTIAL|SECRET|TOP SECRET|UNCLASSIFIED)/i);
+    return classificationMatch ? classificationMatch[0].toUpperCase() : null;
+};
+
+const extractDate = (doc: { path: string; text: string }): string | null => {
+    // Look for dates in format MM/DD/YYYY or similar
+    const dateMatch = doc.text.match(/\b(0?[1-9]|1[0-2])[\/\-](0?[1-9]|[12]\d|3[01])[\/\-](19\d{2}|20\d{2})\b/);
+    return dateMatch ? dateMatch[0] : null;
+};
+
+const formatDocumentText = (text: string): React.ReactElement => {
+    // Enhance formatting by highlighting dates, names, locations, etc.
+    const highlightedText = text
+        .replace(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/g, match => `<span class="text-amber-400">${match}</span>`)
+        .replace(/\b(CONFIDENTIAL|SECRET|TOP SECRET|UNCLASSIFIED)\b/gi, match =>
+            `<span class="bg-red-900/30 text-red-400 px-1">${match}</span>`);
+
+    return <div dangerouslySetInnerHTML={{ __html: highlightedText }} />;
+};
+
 export function ChatInterface({
     messages,
     input,
@@ -40,14 +69,40 @@ export function ChatInterface({
     onBack
 }: ChatInterfaceProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const [sidePanel, setSidePanel] = useState<{
-        isOpen: boolean;
-        document?: { path: string; text: string; };
-    }>({ isOpen: false });
+    const [sidePanelDocument, setSidePanelDocument] = useState<{
+        path: string;
+        text: string;
+    } | null>(null);
+    const [showFullText, setShowFullText] = useState(false);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
+
+    // Auto-show the latest document when a new message with documents arrives
+    useEffect(() => {
+        const lastMessageWithDocs = [...messages].reverse().find(
+            msg => msg.documents && msg.documents.length > 0
+        );
+
+        if (lastMessageWithDocs?.documents && lastMessageWithDocs.documents.length > 0) {
+            setSidePanelDocument(lastMessageWithDocs.documents[0]);
+            setShowFullText(false);
+        }
+    }, [messages]);
+
+    // Get truncated or full text based on user preference
+    const displayText = sidePanelDocument ?
+        (showFullText ? sidePanelDocument.text :
+            sidePanelDocument.text.length > 1000 ?
+                `${sidePanelDocument.text.substring(0, 1000)}...` :
+                sidePanelDocument.text) :
+        "";
+
+    // Get all documents from all bot messages
+    const allDocuments = messages
+        .filter(msg => msg.isBot && msg.documents && msg.documents.length > 0)
+        .flatMap(msg => msg.documents || []);
 
     return (
         <div className="flex flex-col min-h-screen h-screen bg-gray-950">
@@ -55,30 +110,70 @@ export function ChatInterface({
             <div className="fixed inset-0 pointer-events-none noise-overlay opacity-[0.15] -z-10" />
 
             <main className="flex-1 flex w-full relative">
-                {/* Side Panel */}
-                <div className={`fixed inset-y-0 left-0 w-96 bg-gray-900/95 border-r border-green-900/30 transform transition-transform duration-300 ${sidePanel.isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-                    {sidePanel.document && (
-                        <div className="h-full flex flex-col">
+                {/* Side Panel - with increased width from w-96 to w-[28rem] */}
+                <div className={`fixed inset-y-0 left-0 w-[28rem] bg-gray-900/95 border-r border-green-900/30 transform transition-transform duration-300 z-20 flex flex-col ${sidePanelDocument ? 'translate-x-0' : '-translate-x-full'}`}>
+                    {sidePanelDocument && (
+                        <>
+                            {/* Header - with only the close button, no toggle */}
                             <div className="flex items-center justify-between p-4 border-b border-green-900/30 bg-black/40">
                                 <div className="text-green-500/70 truncate text-sm font-mono">
-                                    {sidePanel.document.path}
+                                    {sidePanelDocument.path}
                                 </div>
                                 <button
-                                    onClick={() => setSidePanel({ isOpen: false })}
+                                    onClick={() => setSidePanelDocument(null)}
                                     className="text-gray-500 hover:text-green-400 transition-colors text-sm font-mono"
                                 >
                                     [close]
                                 </button>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-4 font-mono text-gray-300 text-sm leading-relaxed scrollbar-thin scrollbar-thumb-gray-800/40 hover:scrollbar-thumb-gray-700/40 scrollbar-track-transparent">
-                                {sidePanel.document.text}
+
+                            {/* Document metadata */}
+                            <div className="bg-black/30 p-3 border-b border-green-900/30">
+                                <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                                    <div className="text-gray-400">Document ID:</div>
+                                    <div className="text-green-400 truncate">{extractDocumentId(sidePanelDocument.path)}</div>
+                                    <div className="text-gray-400">Classification:</div>
+                                    <div className="text-amber-400">{extractClassification(sidePanelDocument) || "Unclassified"}</div>
+                                    <div className="text-gray-400">Date:</div>
+                                    <div className="text-green-400">{extractDate(sidePanelDocument) || "Unknown"}</div>
+                                </div>
                             </div>
-                        </div>
+
+                            {/* Document selector tabs */}
+                            {allDocuments.length > 0 && (
+                                <div className="border-b border-green-900/30 bg-black/20 overflow-x-auto">
+                                    <div className="flex py-1">
+                                        {allDocuments.map((doc, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => {
+                                                    setSidePanelDocument(doc);
+                                                    setShowFullText(false);
+                                                }}
+                                                className={`px-3 py-2 text-xs whitespace-nowrap ${allDocuments.indexOf(sidePanelDocument) === idx
+                                                    ? "border-b-2 border-green-400 text-green-400"
+                                                    : "text-green-400/50 hover:text-green-400 hover:bg-black/30"
+                                                    } transition-colors`}
+                                            >
+                                                Doc {idx + 1}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Content with enhanced formatting - Show full text by default */}
+                            <div className="flex-1 overflow-y-auto p-4 font-mono text-gray-300 text-sm leading-relaxed scrollbar-thin scrollbar-thumb-gray-800/40 hover:scrollbar-thumb-gray-700/40 scrollbar-track-transparent">
+                                <div className="prose prose-invert max-w-none prose-pre:bg-black/30 prose-pre:border prose-pre:border-green-900/30">
+                                    {formatDocumentText(sidePanelDocument.text)}
+                                </div>
+                            </div>
+                        </>
                     )}
                 </div>
 
-                {/* Main Chat Area */}
-                <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidePanel.isOpen ? 'ml-96' : 'ml-0'}`}>
+                {/* Main Chat Area - update the margin-left to match the new panel width */}
+                <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidePanelDocument ? 'ml-[28rem]' : 'ml-0'}`}>
                     <div className="sticky top-0 z-10 bg-gray-950/80 backdrop-blur-sm mb-6 -mx-2 sm:-mx-6 px-2 sm:px-6 py-2">
                         <div className="flex items-center justify-between max-w-4xl mx-auto w-full">
                             <div className="flex items-center gap-2 sm:gap-4">
@@ -119,47 +214,22 @@ export function ChatInterface({
                                                     <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse [animation-delay:400ms]" />
                                                 </div>
                                             ) : (
-                                                <div className="space-y-2">
-                                                    <ReactMarkdown
-                                                        className="leading-relaxed whitespace-pre-wrap"
-                                                        components={{
-                                                            h3: ({ children }) => <h3 className={markdownStyles.h3}>{children}</h3>,
-                                                            ul: ({ children }) => <ul className={markdownStyles.ul}>{children}</ul>,
-                                                            ol: ({ children }) => <ol className={markdownStyles.ol}>{children}</ol>,
-                                                            li: ({ children }) => <li className={markdownStyles.li}>{children}</li>,
-                                                            p: ({ children }) => <p className={markdownStyles.p}>{children}</p>,
-                                                            strong: ({ children }) => <strong className={markdownStyles.strong}>{children}</strong>,
-                                                            em: ({ children }) => <em className={markdownStyles.em}>{children}</em>,
-                                                            code: ({ children }) => <code className={markdownStyles.code}>{children}</code>,
-                                                            blockquote: ({ children }) => <blockquote className={markdownStyles.blockquote}>{children}</blockquote>,
-                                                        }}
-                                                    >
-                                                        {message.content}
-                                                    </ReactMarkdown>
-
-                                                    {message.documents && message.documents.length > 0 && (
-                                                        <div className="text-xs font-mono mt-3 space-y-2">
-                                                            <div className="text-green-500/50 flex items-center gap-2">
-                                                                <span className="inline-block w-1.5 h-1.5 bg-green-500/50 rounded-full animate-pulse"></span>
-                                                                <span>Source documents:</span>
-                                                            </div>
-                                                            <div className="flex flex-wrap gap-2">
-                                                                {message.documents.map((doc, idx) => (
-                                                                    <button
-                                                                        key={idx}
-                                                                        onClick={() => setSidePanel({
-                                                                            isOpen: true,
-                                                                            document: doc
-                                                                        })}
-                                                                        className="px-2 py-1 bg-black/20 hover:bg-black/30 text-green-400/70 hover:text-green-400 transition-colors truncate max-w-[200px]"
-                                                                    >
-                                                                        {doc.path}
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                <ReactMarkdown
+                                                    className="leading-relaxed whitespace-pre-wrap"
+                                                    components={{
+                                                        h3: ({ children }) => <h3 className={markdownStyles.h3}>{children}</h3>,
+                                                        ul: ({ children }) => <ul className={markdownStyles.ul}>{children}</ul>,
+                                                        ol: ({ children }) => <ol className={markdownStyles.ol}>{children}</ol>,
+                                                        li: ({ children }) => <li className={markdownStyles.li}>{children}</li>,
+                                                        p: ({ children }) => <p className={markdownStyles.p}>{children}</p>,
+                                                        strong: ({ children }) => <strong className={markdownStyles.strong}>{children}</strong>,
+                                                        em: ({ children }) => <em className={markdownStyles.em}>{children}</em>,
+                                                        code: ({ children }) => <code className={markdownStyles.code}>{children}</code>,
+                                                        blockquote: ({ children }) => <blockquote className={markdownStyles.blockquote}>{children}</blockquote>,
+                                                    }}
+                                                >
+                                                    {message.content}
+                                                </ReactMarkdown>
                                             )}
                                         </div>
                                     </div>

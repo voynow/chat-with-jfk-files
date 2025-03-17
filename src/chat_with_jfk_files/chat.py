@@ -56,7 +56,7 @@ async def get_documents(query: Query) -> list[dict]:
     similarity_query = "\n".join([query.text] + query.chat_history)
     embedding = await llm.embed(similarity_query)
     result = index.query(
-        namespace="jfk-docs", vector=embedding, top_k=3, include_metadata=True
+        namespace="jfk-docs", vector=embedding, top_k=5, include_metadata=True
     )
     response = [match.metadata for match in result.matches]
     logger.info(
