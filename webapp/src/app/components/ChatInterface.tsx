@@ -91,14 +91,6 @@ export function ChatInterface({
         }
     }, [messages]);
 
-    // Get truncated or full text based on user preference
-    const displayText = sidePanelDocument ?
-        (showFullText ? sidePanelDocument.text :
-            sidePanelDocument.text.length > 1000 ?
-                `${sidePanelDocument.text.substring(0, 1000)}...` :
-                sidePanelDocument.text) :
-        "";
-
     // Get all documents from all bot messages
     const allDocuments = messages
         .filter(msg => msg.isBot && msg.documents && msg.documents.length > 0)
