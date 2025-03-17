@@ -138,7 +138,6 @@ export function ChatInterface({
                                                 key={idx}
                                                 onClick={() => {
                                                     setSidePanelDocument(doc);
-                                                    setShowFullText(false);
                                                 }}
                                                 className={`px-3 py-2 text-xs whitespace-nowrap ${allDocuments.indexOf(sidePanelDocument) === idx
                                                     ? "border-b-2 border-green-400 text-green-400"
