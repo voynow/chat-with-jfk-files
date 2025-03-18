@@ -1,5 +1,4 @@
 import React, { FormEvent, useEffect, useRef, useState } from "react";
-import ReactMarkdown from 'react-markdown';
 
 export type Message = {
     content: string;
@@ -17,19 +16,6 @@ type ChatInterfaceProps = {
     onInputChange: (value: string) => void;
     onSubmit: (e: FormEvent) => void;
     onBack: () => void;
-};
-
-// Add custom styling for markdown elements
-const markdownStyles = {
-    h3: "text-green-400 font-bold mt-6 mb-3",
-    ul: "space-y-2 ml-4 list-disc my-3",
-    ol: "space-y-2 ml-4 list-decimal my-3",
-    li: "text-gray-300 pl-2",
-    p: "mb-4 leading-relaxed",
-    strong: "text-green-400 font-semibold inline-block my-1",
-    em: "text-gray-400 italic",
-    code: "bg-black/30 px-1 py-0.5 rounded text-green-400",
-    blockquote: "border-l-2 border-green-500/30 pl-4 my-4 text-gray-400 italic",
 };
 
 // Utility functions for document parsing
@@ -61,6 +47,18 @@ const formatDocumentText = (text: string): React.ReactElement => {
     return <div dangerouslySetInnerHTML={{ __html: highlightedText }} />;
 };
 
+// Add this helper function to parse and format the message content
+const formatMessageContent = (content: string): React.ReactElement => {
+    // Using more subdued colors with reduced opacity
+    const formattedContent = content
+        .replace(/\*\*(.*?)\*\*/g, '<span class="font-bold text-green-400/80">$1</span>')
+        .replace(/\*(.*?)\*/g, '<span class="italic text-amber-400/80">$1</span>')
+        .replace(/\(e\.g\.,\s(.*?)\)/g, '(e.g., <span class="text-blue-300/80">$1</span>)')
+        .replace(/\(see document path:\s(.*?)\)/g, '(see document path: <span class="text-blue-400/80 underline">$1</span>)');
+
+    return <div dangerouslySetInnerHTML={{ __html: formattedContent }} />;
+};
+
 export function ChatInterface({
     messages,
     input,
@@ -73,26 +71,58 @@ export function ChatInterface({
         path: string;
         text: string;
     } | null>(null);
+    const [currentMessageDocuments, setCurrentMessageDocuments] = useState<Array<{
+        path: string;
+        text: string;
+    }>>([]);
+    const [isTransitioning, setIsTransitioning] = useState(false);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    // Auto-show the latest document when a new message with documents arrives
-    useEffect(() => {
-        const lastMessageWithDocs = [...messages].reverse().find(
-            msg => msg.documents && msg.documents.length > 0
-        );
-
-        if (lastMessageWithDocs?.documents && lastMessageWithDocs.documents.length > 0) {
-            setSidePanelDocument(lastMessageWithDocs.documents[0]);
+    // Function to handle opening documents from a specific message
+    const handleOpenDocuments = (docs: Array<{ path: string; text: string; }> | undefined) => {
+        if (docs && docs.length > 0) {
+            setCurrentMessageDocuments(docs);
+            setSidePanelDocument(docs[0]);
         }
-    }, [messages]);
+    };
 
-    // Get all documents from all bot messages
-    const allDocuments = messages
-        .filter(msg => msg.isBot && msg.documents && msg.documents.length > 0)
-        .flatMap(msg => msg.documents || []);
+    // Enhanced submitQuestion with transition handling
+    const submitQuestion = (question: string) => {
+        // Start transition if this is the first message
+        if (messages.length === 0) {
+            setIsTransitioning(true);
+        }
+
+        // Update input
+        onInputChange(question);
+
+        // Submit with delay
+        setTimeout(() => {
+            const submitButton = document.querySelector('button[type="submit"]');
+            if (submitButton) {
+                (submitButton as HTMLButtonElement).click();
+            }
+
+            // End transition after the form is submitted
+            setTimeout(() => {
+                setIsTransitioning(false);
+            }, 300); // Short delay after submission
+        }, 50);
+    };
+
+    // Handle custom form submission to apply transition effect
+    const handleSubmit = (e: FormEvent) => {
+        if (messages.length === 0) {
+            setIsTransitioning(true);
+            onSubmit(e);
+            setTimeout(() => setIsTransitioning(false), 300);
+        } else {
+            onSubmit(e);
+        }
+    };
 
     return (
         <div className="flex flex-col min-h-screen h-screen bg-gray-950">
@@ -100,8 +130,8 @@ export function ChatInterface({
             <div className="fixed inset-0 pointer-events-none noise-overlay opacity-[0.15] -z-10" />
 
             <main className="flex-1 flex w-full relative">
-                {/* Side Panel - with increased width from w-96 to w-[28rem] */}
-                <div className={`fixed inset-y-0 left-0 w-[28rem] bg-gray-900/95 border-r border-green-900/30 transform transition-transform duration-300 z-20 flex flex-col ${sidePanelDocument ? 'translate-x-0' : '-translate-x-full'}`}>
+                {/* Side Panel - responsive width based on screen size */}
+                <div className={`fixed inset-y-0 left-0 w-[90vw] sm:w-[80vw] md:w-[70vw] lg:w-[60vw] xl:w-1/2 bg-gray-900/95 border-r border-green-900/30 transform transition-transform duration-300 z-20 flex flex-col ${sidePanelDocument ? 'translate-x-0' : '-translate-x-full'}`}>
                     {sidePanelDocument && (
                         <>
                             {/* Header - with only the close button, no toggle */}
@@ -130,16 +160,16 @@ export function ChatInterface({
                             </div>
 
                             {/* Document selector tabs */}
-                            {allDocuments.length > 0 && (
+                            {currentMessageDocuments.length > 0 && (
                                 <div className="border-b border-green-900/30 bg-black/20 overflow-x-auto">
                                     <div className="flex py-1">
-                                        {allDocuments.map((doc, idx) => (
+                                        {currentMessageDocuments.map((doc, idx) => (
                                             <button
                                                 key={idx}
                                                 onClick={() => {
                                                     setSidePanelDocument(doc);
                                                 }}
-                                                className={`px-3 py-2 text-xs whitespace-nowrap ${allDocuments.indexOf(sidePanelDocument) === idx
+                                                className={`px-3 py-2 text-xs whitespace-nowrap ${currentMessageDocuments.indexOf(sidePanelDocument) === idx
                                                     ? "border-b-2 border-green-400 text-green-400"
                                                     : "text-green-400/50 hover:text-green-400 hover:bg-black/30"
                                                     } transition-colors`}
@@ -161,20 +191,11 @@ export function ChatInterface({
                     )}
                 </div>
 
-                {/* Panel toggle button - spans full height of left side */}
-                <button
-                    onClick={() => setSidePanelDocument(allDocuments[0])}
-                    className={`fixed inset-y-0 left-0 w-6 bg-gray-900/40 border-r border-green-900/20 flex items-center justify-center text-green-400/40 hover:text-green-400 hover:bg-gray-900/60 transition-all duration-300 z-20 ${sidePanelDocument ? 'opacity-0 pointer-events-none -translate-x-2' : 'opacity-100 translate-x-0'}`}
-                    aria-label="Open document panel"
-                    style={{ display: allDocuments.length > 0 ? 'flex' : 'none' }}
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="9 18 15 12 9 6"></polyline>
-                    </svg>
-                </button>
-
-                {/* Main Chat Area - update the margin-left to match the new panel width */}
-                <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidePanelDocument ? 'ml-[28rem]' : 'ml-0'}`}>
+                {/* Main Chat Area - responsive margin based on screen size */}
+                <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidePanelDocument
+                    ? 'ml-[90vw] sm:ml-[80vw] md:ml-[70vw] lg:ml-[60vw] xl:ml-1/2'
+                    : 'ml-0'
+                    } ${isTransitioning ? 'opacity-40' : 'opacity-100'}`}>
                     <div className="sticky top-0 z-10 bg-gray-950/80 backdrop-blur-sm mb-6 -mx-2 sm:-mx-6 px-2 sm:px-6 py-2">
                         <div className="flex items-center justify-between max-w-4xl mx-auto w-full">
                             <div className="flex items-center gap-2 sm:gap-4">
@@ -196,67 +217,131 @@ export function ChatInterface({
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto mb-2 pr-2 sm:pr-4 scrollbar-thin scrollbar-thumb-gray-800/40 hover:scrollbar-thumb-gray-700/40 scrollbar-track-transparent min-h-0">
-                        <div className="flex flex-col space-y-6 max-w-4xl mx-auto w-full p-2 sm:p-6">
-                            {messages.map((message, index) => (
-                                <div key={index} className={`group flex flex-col space-y-2 animate-fade-in ${message.isBot ? "" : "items-end"}`}>
-                                    <div className={`flex items-center space-x-2 text-xs font-mono ${message.isBot ? "text-gray-500" : "text-gray-500 flex-row-reverse space-x-reverse"}`}>
-                                        <span>{message.isBot ? "Archive" : "You"}</span>
-                                    </div>
-                                    <div className="inline-block max-w-[85%]">
-                                        <div className={`inline-block p-3 font-mono text-sm backdrop-blur-sm ${message.isBot ? "bg-gray-900/50 text-green-100 border-l-2 border-l-green-800" : "bg-gray-800/50 text-gray-100 border-l-2 border-l-gray-700"}`}>
-                                            {message.isBot && !message.content ? (
-                                                <div className="flex items-center space-x-2">
-                                                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                                                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse [animation-delay:200ms]" />
-                                                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse [animation-delay:400ms]" />
-                                                </div>
-                                            ) : (
-                                                <ReactMarkdown
-                                                    className="leading-relaxed whitespace-pre-wrap"
-                                                    components={{
-                                                        h3: ({ children }) => <h3 className={markdownStyles.h3}>{children}</h3>,
-                                                        ul: ({ children }) => <ul className={markdownStyles.ul}>{children}</ul>,
-                                                        ol: ({ children }) => <ol className={markdownStyles.ol}>{children}</ol>,
-                                                        li: ({ children }) => <li className={markdownStyles.li}>{children}</li>,
-                                                        p: ({ children }) => <p className={markdownStyles.p}>{children}</p>,
-                                                        strong: ({ children }) => <strong className={markdownStyles.strong}>{children}</strong>,
-                                                        em: ({ children }) => <em className={markdownStyles.em}>{children}</em>,
-                                                        code: ({ children }) => <code className={markdownStyles.code}>{children}</code>,
-                                                        blockquote: ({ children }) => <blockquote className={markdownStyles.blockquote}>{children}</blockquote>,
-                                                    }}
-                                                >
-                                                    {message.content}
-                                                </ReactMarkdown>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                            <div ref={messagesEndRef} />
-                        </div>
-                    </div>
+                    {messages.length > 0 ? (
+                        <>
+                            <div className="flex-1 overflow-y-auto mb-2 pr-2 sm:pr-4 scrollbar-thin scrollbar-thumb-gray-800/40 hover:scrollbar-thumb-gray-700/40 scrollbar-track-transparent min-h-0">
+                                <div className="flex flex-col space-y-6 max-w-4xl mx-auto w-full p-2 sm:p-6">
+                                    {messages.map((message, index) => (
+                                        <div key={index} className={`group flex flex-col space-y-2 animate-fade-in ${message.isBot ? "" : "items-end"}`}>
+                                            <div className={`flex items-center space-x-2 text-xs font-mono ${message.isBot ? "text-gray-500" : "text-gray-500 flex-row-reverse space-x-reverse"}`}>
+                                                <span>{message.isBot ? "AI" : "You"}</span>
+                                            </div>
+                                            <div className="inline-block max-w-[85%]">
+                                                <div className={`inline-block p-3 font-mono text-sm backdrop-blur-sm rounded-lg ${message.isBot
+                                                    ? "bg-gray-900/20 border border-gray-800/50 shadow-sm shadow-green-900/10"
+                                                    : "bg-gray-700/20 border border-gray-800/50 hover:border-gray-700/50"
+                                                    }`}>
+                                                    {message.isBot && !message.content ? (
+                                                        <div className="flex items-center space-x-2">
+                                                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" />
+                                                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse [animation-delay:200ms]" />
+                                                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse [animation-delay:400ms]" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="whitespace-pre-wrap text-gray-200">
+                                                            {formatMessageContent(message.content)}
+                                                        </div>
+                                                    )}
 
-                    <div className="w-full max-w-4xl mx-auto sticky bottom-4">
-                        <form
-                            onSubmit={onSubmit}
-                            className="flex gap-2 items-center bg-gray-900/50 border border-gray-800/50 backdrop-blur-sm relative"
-                        >
-                            <input
-                                type="text"
-                                value={input}
-                                onChange={(e) => onInputChange(e.target.value)}
-                                placeholder="Type your message..."
-                                className="flex-1 p-2 sm:p-3 bg-transparent font-mono text-base focus:outline-none text-gray-100 placeholder-gray-600 min-w-0"
-                            />
-                            <button
-                                type="submit"
-                                className="absolute right-0 top-0 bottom-0 px-3 sm:px-5 py-2 sm:py-3 font-mono text-sm text-gray-400 hover:text-green-400 transition-colors"
-                            >
-                                Send
-                            </button>
-                        </form>
-                    </div>
+                                                    {/* Document inspection button with updated styling */}
+                                                    {message.isBot && message.documents && message.documents.length > 0 && (
+                                                        <div className="mt-3 pt-3 border-t border-gray-800 flex items-center space-x-3">
+                                                            <button
+                                                                onClick={() => handleOpenDocuments(message.documents)}
+                                                                className="text-xs py-1.5 px-3 bg-gray-900 border border-gray-800/50 text-gray-300 hover:text-gray-200 hover:bg-gray-800/60 transition-all rounded-lg flex items-center space-x-1.5"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                                    <circle cx="12" cy="12" r="3"></circle>
+                                                                </svg>
+                                                                <span>Inspect Documents ({message.documents.length})</span>
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <div ref={messagesEndRef} />
+                                </div>
+                            </div>
+
+                            <div className="w-full max-w-4xl mx-auto sticky bottom-4 px-4">
+                                <form
+                                    onSubmit={handleSubmit}
+                                    className="flex gap-2 items-center bg-gray-900/20 border border-gray-800/30 rounded-lg backdrop-blur-md relative shadow-lg shadow-green-900/10"
+                                >
+                                    <input
+                                        type="text"
+                                        value={input}
+                                        onChange={(e) => onInputChange(e.target.value)}
+                                        placeholder="Type your message..."
+                                        className="flex-1 p-3 bg-transparent font-mono text-base focus:outline-none text-gray-100 placeholder-gray-600 min-w-0"
+                                    />
+                                    <button
+                                        type="submit"
+                                        className="h-full px-4 py-3 text-gray-400 hover:text-green-400 transition-colors"
+                                    >
+                                        →
+                                    </button>
+                                </form>
+                            </div>
+                        </>
+                    ) : (
+                        <div className={`flex-1 flex flex-col items-center justify-center px-4 transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+                            <div className="w-full max-w-2xl mx-auto bg-gray-900/30 rounded-md border border-gray-800/40 p-5 shadow-md animate-fade-in">
+                                <div className="flex flex-col items-center mb-5">
+                                    <h2 className="text-3xl font-mono font-bold mb-3 text-gre ">
+                                        JFK Files
+                                    </h2>
+                                </div>
+
+                                <form
+                                    onSubmit={handleSubmit}
+                                    className="relative mb-3"
+                                >
+                                    <div className="relative flex items-center bg-gray-900/70 border border-gray-700/60 rounded-md overflow-hidden">
+                                        <input
+                                            type="text"
+                                            value={input}
+                                            onChange={(e) => onInputChange(e.target.value)}
+                                            placeholder="Ask a question..."
+                                            className="flex-1 p-3 bg-transparent font-mono text-base focus:outline-none text-white placeholder-gray-500 min-w-0"
+                                            autoFocus
+                                        />
+                                        <button
+                                            type="submit"
+                                            className="h-full px-4 text-white"
+                                            aria-label="Send message"
+                                        >
+                                            →
+                                        </button>
+                                    </div>
+                                </form>
+
+                                <div className="grid grid-cols-1 gap-2 mt-3 sm:grid-cols-3">
+                                    <button
+                                        onClick={() => submitQuestion("Who killed JFK?")}
+                                        className="p-2 rounded-md bg-gray-900/70 border border-gray-700/50 hover:border-white text-white text-sm font-mono text-left transition-all"
+                                    >
+                                        Who killed JFK?
+                                    </button>
+                                    <button
+                                        onClick={() => submitQuestion("Tell me about the Warren Commission")}
+                                        className="p-2 rounded-md bg-gray-900/70 border border-gray-700/50 hover:border-white text-white text-sm font-mono text-left transition-all"
+                                    >
+                                        Warren Commission
+                                    </button>
+                                    <button
+                                        onClick={() => submitQuestion("What happened on November 22, 1963?")}
+                                        className="p-2 rounded-md bg-gray-900/70 border border-gray-700/50 hover:border-white text-white text-sm font-mono text-left transition-all"
+                                    >
+                                        Nov 22, 1963
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </main>
         </div>

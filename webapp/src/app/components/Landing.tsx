@@ -1,10 +1,13 @@
+
 type LandingProps = {
     onStart: () => void;
 };
 
 export function Landing({ onStart }: LandingProps) {
     return (
-        <div className="flex min-h-screen bg-gray-950 text-gray-100 relative scanlines">
+        <div
+            className="flex min-h-screen bg-gray-950 text-gray-100 relative scanlines"
+        >
             <div className="absolute inset-0 pointer-events-none noise-overlay opacity-[0.15]" />
 
             <nav className="absolute top-0 w-full pl-6 pr-6 pt-4 flex justify-between items-center font-mono z-50">
@@ -40,7 +43,7 @@ export function Landing({ onStart }: LandingProps) {
 
                     <div className="flex flex-col items-center">
                         <h1 className="text-4xl md:text-6xl font-mono font-bold mb-6 tracking-tight bg-gradient-to-r from-gray-100 to-gray-300 text-transparent bg-clip-text">
-                            JFK Assassination Files
+                            Chat With JFK Files
                         </h1>
                         <p className="text-lg md:text-xl text-gray-400 font-mono mb-12 max-w-2xl mx-auto leading-relaxed typing-text">
                             <span className="typing-cursor"></span>
@@ -104,10 +107,10 @@ export function Landing({ onStart }: LandingProps) {
                             <div className="relative border border-gray-800/30 bg-gray-900/20 backdrop-blur-sm p-4 md:p-6 hover:border-green-500/30 transition-colors duration-300">
                                 <div className="text-green-400/80 mb-2 md:mb-3 flex items-center justify-center gap-2 text-xs md:text-sm">
                                     <div className="w-1.5 h-1.5 bg-green-500/50 rounded-full animate-pulse" />
-                                    Jan 23rd, 2025
+                                    March 18th, 2025
                                 </div>
                                 <div className="text-gray-500 font-light tracking-wide text-xs md:text-sm leading-relaxed text-center">
-                                    Trump Signs Declassification Order
+                                    Documents Released Publicly
                                 </div>
                             </div>
                         </div>
