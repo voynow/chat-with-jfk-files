@@ -56,13 +56,34 @@ async def get_documents(query: Query) -> list[dict]:
     similarity_query = "\n".join([query.text] + query.chat_history)
     embedding = await llm.embed(similarity_query)
     result = index.query(
-        namespace="jfk-docs-2025-master", vector=embedding, top_k=4, include_metadata=True
+        namespace="jfk-docs-2025-master",
+        vector=embedding,
+        top_k=4,
+        include_metadata=True,
     )
     response = [match.metadata for match in result.matches]
     logger.info(
         f"{session_id} // querying documents took {time.time() - start_time:.2f}s"
     )
     return response
+
+
+@app.post("/summary")
+async def summary_endpoint(text: str) -> StreamingResponse:
+    """
+    Streaming summary endpoint for abitrary text summarization
+
+    :param text: The text to summarize
+    :return: Streaming response of summary
+    """
+
+    async def generate():
+        async for chunk in llm.get_streaming_completion(
+            f"You are living within a niche government document intelligence platform. Summarize the following text excerpt in 2-3 sentences. You should *emphesize* and **highlight** key points with * and ** respectively: {text}"
+        ):
+            yield f"data: {chunk}\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 
 @app.post("/chat")

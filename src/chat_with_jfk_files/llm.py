@@ -17,7 +17,7 @@ async def embed(text: str) -> list:
 
 async def _get_completion(
     messages: List[ChatCompletionMessage],
-    model: str = "gpt-4o",
+    model: str = "gpt-4o-mini",
     response_format: Optional[Dict] = None,
 ):
     response = await client.chat.completions.create(

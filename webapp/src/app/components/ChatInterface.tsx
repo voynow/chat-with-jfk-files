@@ -1,3 +1,4 @@
+import { Sparkles } from "lucide-react";
 import React, { FormEvent, useEffect, useRef, useState } from "react";
 
 export type Message = {
@@ -76,6 +77,9 @@ export function ChatInterface({
         text: string;
     }>>([]);
     const [isTransitioning, setIsTransitioning] = useState(false);
+    const [summaryLoading, setSummaryLoading] = useState(false);
+    const [summary, setSummary] = useState('');
+    const [showSummary, setShowSummary] = useState(false);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -162,29 +166,104 @@ export function ChatInterface({
                             {/* Document selector tabs */}
                             {currentMessageDocuments.length > 0 && (
                                 <div className="border-b border-green-900/30 bg-black/20 overflow-x-auto">
-                                    <div className="flex py-1">
-                                        {currentMessageDocuments.map((doc, idx) => (
-                                            <button
-                                                key={idx}
-                                                onClick={() => {
-                                                    setSidePanelDocument(doc);
-                                                }}
-                                                className={`px-3 py-2 text-xs whitespace-nowrap ${currentMessageDocuments.indexOf(sidePanelDocument) === idx
-                                                    ? "border-b-2 border-green-400 text-green-400"
-                                                    : "text-green-400/50 hover:text-green-400 hover:bg-black/30"
-                                                    } transition-colors`}
-                                            >
-                                                Doc {idx + 1}
-                                            </button>
-                                        ))}
+                                    <div className="flex py-1 justify-between items-center pr-2">
+                                        <div className="flex">
+                                            {currentMessageDocuments.map((doc, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => {
+                                                        setSidePanelDocument(doc);
+                                                        setShowSummary(false); // Reset summary when changing doc
+                                                    }}
+                                                    className={`px-3 py-2 text-xs whitespace-nowrap ${currentMessageDocuments.indexOf(sidePanelDocument) === idx
+                                                        ? "border-b-2 border-green-400 text-green-400"
+                                                        : "text-green-400/50 hover:text-green-400 hover:bg-black/30"
+                                                        } transition-colors`}
+                                                >
+                                                    Doc {idx + 1}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <button
+                                            onClick={async () => {
+                                                try {
+                                                    if (showSummary) {
+                                                        setShowSummary(false);
+                                                        return;
+                                                    }
+
+                                                    setSummaryLoading(true);
+                                                    setSummary('');
+                                                    setShowSummary(true); // Show summary view immediately with loading state
+
+                                                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL_SUMMARY!}?text=${encodeURIComponent(sidePanelDocument!.text)}`, {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' }
+                                                    });
+
+                                                    if (!response.ok) throw new Error('Failed to summarize');
+
+                                                    const reader = response.body?.getReader();
+                                                    if (!reader) throw new Error('No reader available');
+
+                                                    const decoder = new TextDecoder();
+
+                                                    while (true) {
+                                                        const { done, value } = await reader.read();
+                                                        if (done) break;
+
+                                                        const chunk = decoder.decode(value);
+                                                        const lines = chunk.split('\n\n');
+
+                                                        for (const line of lines) {
+                                                            if (line.startsWith('data: ')) {
+                                                                const content = line.substring(6);
+                                                                if (content.startsWith('[ERROR]')) {
+                                                                    throw new Error(content.substring(8));
+                                                                }
+                                                                setSummary(prev => prev + content);
+                                                            }
+                                                        }
+                                                    }
+                                                } catch (error) {
+                                                    console.error('Summarization error:', error);
+                                                    setSummary('Error generating summary. Please try again.');
+                                                } finally {
+                                                    setSummaryLoading(false);
+                                                }
+                                            }}
+                                            className={`flex items-center justify-center px-2 py-1 text-xs rounded-md transition-colors ${showSummary ? 'bg-amber-400/20 text-amber-400' : 'text-amber-400/70 hover:text-amber-400 hover:bg-gray-800/30'}`}
+                                            disabled={summaryLoading}
+                                            title="Summarize document"
+                                        >
+                                            {summaryLoading ? (
+                                                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                            ) : (
+                                                <Sparkles size={16} />
+                                            )}
+                                        </button>
                                     </div>
                                 </div>
                             )}
 
-                            {/* Content with enhanced formatting - Show full text by default */}
+                            {/* Content with enhanced formatting */}
                             <div className="flex-1 overflow-y-auto p-4 font-mono text-gray-300 text-sm leading-relaxed scrollbar-thin scrollbar-thumb-gray-800/40 hover:scrollbar-thumb-gray-700/40 scrollbar-track-transparent">
                                 <div className="prose prose-invert max-w-none prose-pre:bg-black/30 prose-pre:border prose-pre:border-green-900/30">
-                                    {formatDocumentText(sidePanelDocument.text)}
+                                    {showSummary ? (
+                                        <div className="bg-green-900/10 border border-green-900/30 p-3 rounded-md">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <h3 className="text-green-400 text-sm font-semibold">Document Summary</h3>
+                                            </div>
+                                            <div className="text-gray-300">
+                                                {formatMessageContent(summary || "Generating summary...")}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        formatDocumentText(sidePanelDocument.text)
+                                    )}
                                 </div>
                             </div>
                         </>
