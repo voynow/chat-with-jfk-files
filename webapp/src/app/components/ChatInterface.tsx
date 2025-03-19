@@ -215,6 +215,12 @@ export function ChatInterface({
                                 SUPPORT_THIS_PROJECT
                             </a>
                         </div>
+
+                        <div className="flex justify-center items-center max-w-4xl mx-auto w-full pb-1">
+                            <div className="px-2 py-1 bg-green-900/20 border border-green-900/30 rounded text-xs text-green-400/90 font-mono">
+                                LATEST_INDEX: jfk-docs-mar-2025-master
+                            </div>
+                        </div>
                     </div>
 
                     {messages.length > 0 ? (
