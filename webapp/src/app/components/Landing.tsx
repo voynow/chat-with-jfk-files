@@ -1,4 +1,3 @@
-
 type LandingProps = {
     onStart: () => void;
 };
@@ -6,7 +5,7 @@ type LandingProps = {
 export function Landing({ onStart }: LandingProps) {
     return (
         <div
-            className="flex min-h-screen bg-gray-950 text-gray-100 relative scanlines"
+            className="flex min-h-screen text-gray-100 relative scanlines"
         >
             <div className="absolute inset-0 pointer-events-none noise-overlay opacity-[0.15]" />
 

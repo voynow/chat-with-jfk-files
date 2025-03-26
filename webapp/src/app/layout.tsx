@@ -32,8 +32,10 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[url('/background.png')] bg-cover bg-center bg-no-repeat bg-fixed`}
       >
+        <div className="fixed inset-0 bg-[url('/background.png')] bg-cover bg-center bg-no-repeat bg-fixed -z-20" />
+        <div className="fixed inset-0 bg-black/60 -z-10" />
         <Script
           strategy="afterInteractive"
           src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}

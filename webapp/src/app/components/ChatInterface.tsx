@@ -129,8 +129,7 @@ export function ChatInterface({
     };
 
     return (
-        <div className="flex flex-col min-h-screen h-screen bg-gray-950">
-            <div className="fixed inset-0 bg-gray-950 -z-10" />
+        <div className="flex flex-col min-h-screen h-screen">
             <div className="fixed inset-0 pointer-events-none noise-overlay opacity-[0.15] -z-10" />
 
             <main className="flex-1 flex w-full relative">
@@ -275,7 +274,7 @@ export function ChatInterface({
                     ? 'ml-[90vw] sm:ml-[80vw] md:ml-[70vw] lg:ml-[60vw] xl:ml-1/2'
                     : 'ml-0'
                     } ${isTransitioning ? 'opacity-40' : 'opacity-100'}`}>
-                    <div className="sticky top-0 z-10 bg-gray-950/80 backdrop-blur-sm mb-6 -mx-2 sm:-mx-6 px-2 sm:px-6 py-2">
+                    <div className="sticky top-0 z-10 backdrop-blur-sm mb-6 -mx-2 sm:-mx-6 px-2 sm:px-6 py-2">
                         <div className="flex items-center justify-between max-w-4xl mx-auto w-full">
                             <div className="flex items-center gap-2 sm:gap-4">
                                 <h1
